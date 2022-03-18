@@ -1,0 +1,233 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>build_adaptive_map</title><meta name="generator" content="MATLAB 9.7"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-05-01"><meta name="DC.source" content="build_adaptive_map.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">Build map adaptively</a></li><li><a href="#3">Plot approximation</a></li></ul></div><pre class="codeinput">clear; close <span class="string">all</span>; clc
+addpath(genpath(<span class="string">'../../src'</span>))
+sd = 2; rng(sd);
+
+<span class="comment">% define target</span>
+pi = Banana();
+d = 2;
+</pre><h2 id="2">Build map adaptively</h2><pre class="codeinput"><span class="comment">% set max_terms</span>
+max_terms = 40;
+
+<span class="comment">% define reference and samples</span>
+N = 2000;
+Ztrain = randn(N,d);
+Zvalid = randn(N,d);
+
+<span class="comment">% define total-order identity map using Hermite functions</span>
+basis = ProbabilistHermiteFunction();
+T = identity_map(1:d, basis);
+T = TriangularTransportMap(T);
+
+<span class="comment">% define and optimize pullback-density</span>
+[Topt, output] = adaptive_transport_map(T, pi, Ztrain, Zvalid, max_terms);
+</pre><pre class="codeoutput">Term    2 - Training error: 199.6112, Validation error: 184.4407 
+Term    3 - Training error: 134.7613, Validation error: 120.2901 
+Term    4 - Training error: 103.5518, Validation error:  85.7179 
+Term    5 - Training error: 103.5113, Validation error:  86.0994 
+Term    6 - Training error:  69.7413, Validation error:  58.9712 
+Term    7 - Training error:  69.5695, Validation error:  58.7790 
+Term    8 - Training error:  54.7355, Validation error:  45.0130 
+Term    9 - Training error:  54.5411, Validation error:  44.7176 
+Term   10 - Training error:  51.3099, Validation error:  42.3905 
+Term   11 - Training error:  51.3087, Validation error:  42.4026 
+Term   12 - Training error:  18.8919, Validation error:  18.7309 
+Term   13 - Training error:  18.8736, Validation error:  18.7577 
+Term   14 - Training error:   5.4369, Validation error:   5.3777 
+Term   15 - Training error:   5.4316, Validation error:   5.3769 
+Term   16 - Training error:   4.9026, Validation error:   4.8452 
+Term   17 - Training error:   4.8729, Validation error:   4.8494 
+Term   18 - Training error:   4.8298, Validation error:   4.7757 
+Term   19 - Training error:   4.8164, Validation error:   4.7716 
+Term   20 - Training error:   4.7178, Validation error:   4.6035 
+Term   21 - Training error:   4.6897, Validation error:   4.6138 
+Term   22 - Training error:   4.6529, Validation error:   4.5732 
+Term   23 - Training error:   4.6523, Validation error:   4.5797 
+Term   24 - Training error:   4.4727, Validation error:   4.1989 
+Term   25 - Training error:   4.4703, Validation error:   4.2387 
+Term   26 - Training error:   4.3938, Validation error:   4.0967 
+Term   27 - Training error:   4.3815, Validation error:   4.0980 
+Term   28 - Training error:   4.3637, Validation error:   4.1183 
+Term   29 - Training error:   4.3475, Validation error:   4.1386 
+Term   30 - Training error:   4.3464, Validation error:   4.1372 
+Term   31 - Training error:   3.8383, Validation error:   4.0270 
+Term   32 - Training error:   3.7357, Validation error:   4.0194 
+Term   33 - Training error:   3.5378, Validation error:   3.9808 
+Term   34 - Training error:   3.5134, Validation error:   4.0830 
+Term   35 - Training error:   3.5083, Validation error:   4.0513 
+Term   36 - Training error:   3.0738, Validation error:   3.1904 
+Term   37 - Training error:   3.0333, Validation error:   3.1784 
+Term   38 - Training error:   3.0328, Validation error:   3.1943 
+Term   39 - Training error:   2.9538, Validation error:   3.0224 
+Term   40 - Training error:   2.9536, Validation error:   3.0228 
+</pre><h2 id="3">Plot approximation</h2><pre class="codeinput"><span class="comment">% sample from push-forward density</span>
+Zeval = randn(1e4,2);
+X_approx = Topt.evaluate(Zeval);
+
+<span class="comment">% define grid</span>
+xx = linspace(-3,3,100);
+yy = linspace(-1,4,100);
+[X1,X2] = meshgrid(xx,yy);
+logpi_true = pi.log_pdf([X1(:),X2(:)]);
+logpi_true = reshape(logpi_true, size(X1,1), size(X2,2));
+
+<span class="comment">% plot approximation</span>
+figure
+hold <span class="string">on</span>
+contourf(X1, X2, exp(logpi_true), 20)
+plot(X_approx(:,1), X_approx(:,2), <span class="string">'.r'</span>,<span class="string">'MarkerSize'</span>,2)
+xlabel(<span class="string">'$x_1$'</span>)
+ylabel(<span class="string">'$x_2$'</span>)
+xlim([-3,3])
+ylim([-1,4])
+title(<span class="string">'ATM approximation'</span>)
+set(gca,<span class="string">'FontSize'</span>,16)
+hold <span class="string">off</span>
+
+<span class="comment">% plot errors vs. iteration</span>
+figure
+hold <span class="string">on</span>
+plot(1:length(output.train_err), output.train_err, <span class="string">'-o'</span>)
+plot(1:length(output.valid_err), output.valid_err, <span class="string">'-o'</span>)
+xlabel(<span class="string">'Iterations'</span>)
+ylabel(<span class="string">'Negative log-likelihood'</span>)
+legend(<span class="string">'Training error'</span>,<span class="string">'Test error'</span>)
+set(gca,<span class="string">'FontSize'</span>,16)
+hold <span class="string">off</span>
+
+<span class="comment">% -- END OF FILE --</span>
+</pre><img vspace="5" hspace="5" src="build_adaptive_map_01.png" alt=""> <img vspace="5" hspace="5" src="build_adaptive_map_02.png" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+clear; close all; clc
+addpath(genpath('../../src'))
+sd = 2; rng(sd);
+
+% define target
+pi = Banana();
+d = 2;
+
+%% Build map adaptively
+
+% set max_terms
+max_terms = 40;
+
+% define reference and samples
+N = 2000;
+Ztrain = randn(N,d);
+Zvalid = randn(N,d);
+
+% define total-order identity map using Hermite functions
+basis = ProbabilistHermiteFunction();
+T = identity_map(1:d, basis);
+T = TriangularTransportMap(T);
+
+% define and optimize pullback-density
+[Topt, output] = adaptive_transport_map(T, pi, Ztrain, Zvalid, max_terms);
+
+%% Plot approximation
+
+% sample from push-forward density
+Zeval = randn(1e4,2);
+X_approx = Topt.evaluate(Zeval);
+
+% define grid
+xx = linspace(-3,3,100);
+yy = linspace(-1,4,100);
+[X1,X2] = meshgrid(xx,yy);
+logpi_true = pi.log_pdf([X1(:),X2(:)]);
+logpi_true = reshape(logpi_true, size(X1,1), size(X2,2));
+
+% plot approximation
+figure
+hold on
+contourf(X1, X2, exp(logpi_true), 20)
+plot(X_approx(:,1), X_approx(:,2), '.r','MarkerSize',2)
+xlabel('$x_1$')
+ylabel('$x_2$')
+xlim([-3,3])
+ylim([-1,4])
+title('ATM approximation')
+set(gca,'FontSize',16)
+hold off
+
+% plot errors vs. iteration
+figure
+hold on
+plot(1:length(output.train_err), output.train_err, '-o')
+plot(1:length(output.valid_err), output.valid_err, '-o')
+xlabel('Iterations')
+ylabel('Negative log-likelihood')
+legend('Training error','Test error')
+set(gca,'FontSize',16)
+hold off
+
+% REPLACE_WITH_DASH_DASH END OF FILE REPLACE_WITH_DASH_DASH
+##### SOURCE END #####
+--></body></html>

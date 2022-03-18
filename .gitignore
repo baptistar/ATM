@@ -1,0 +1,13 @@
+# temporary matlab files
+*.m~
+
+# mat files
+*.mat
+
+# figrues
+#*.pdf
+#*.png
+*.eps
+
+# DS_Store files
+.DS_Store

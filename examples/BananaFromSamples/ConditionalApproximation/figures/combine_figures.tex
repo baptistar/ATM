@@ -1,0 +1,27 @@
+\documentclass[tikz,border=2mm]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{matrix, positioning}
+
+\begin{document}
+
+\begin{tikzpicture}
+	\node (J) {\includegraphics[width=12cm]{joint_xy.eps}};
+
+	\node[right=2cm of J]  (P2) {\includegraphics[width=7cm]{post_y2.eps}};
+	\node[above=1mm of P2] (P1) {\includegraphics[width=7cm]{post_y3.eps}};
+	\node[below=1mm of P2] (P3) {\includegraphics[width=7cm]{post_y1.eps}};
+
+	\node[right=5mm of P1] (M1) {\includegraphics[width=7cm]{map_y3.eps}};
+	\node[right=5mm of P2] (M2) {\includegraphics[width=7cm]{map_y2.eps}};
+	\node[right=5mm of P3] (M3) {\includegraphics[width=7cm]{map_y1.eps}};
+
+	\node[right=-1.49cm of J.east, yshift=-1.79cm] (C3) {};
+	\node[right=-1.5cm of J.east, yshift=-0.65cm] (C2) {};
+	\node[right=-1.49cm of J.east, yshift=0.575cm] (C1) {};
+
+	\draw[->,very thick] (C3) -- (P3.west) {};
+	\draw[->,very thick] (C2) -- (P2.west) {};
+	\draw[->,very thick] (C1) -- (P1.west) {};	
+\end{tikzpicture}
+
+\end{document}
