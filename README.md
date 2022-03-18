@@ -4,9 +4,7 @@
 
 Package contains algorithms for learning triangular transport maps given access to samples from a target density or evaluations of the target.
 
-This sofware has been developed and is being maintained by the Uncertainty Quantification Group at MIT, under the guidance of Prof. Youssef Marzouk.
-
-## Developing team
+## Main Developers:
 
 Ricardo Baptista (MIT), Paul-Baptiste Rubio (MIT)
 
