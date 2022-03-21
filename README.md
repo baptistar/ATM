@@ -4,9 +4,9 @@
 
 Package contains methods and algorithms for learning monotone triangular transport maps given access to samples from a target density or evaluations of the target. The Adaptive Transport Map algorithm is a greedy approach for learning parameteric map approximation using a sparse feature expansion.
 
-This sofware has been developed and is being maintained by the Uncertainty Quantification Group at MIT, under the guidance of Prof. Youssef Marzouk.
+More information on the methodology for this sofware can be found in this [preprint](https://arxiv.org/pdf/2009.10303.pdf). The authors are Ricardo Baptista (MIT), Youssef Marzouk (MIT), and Olivier Zahm (INRIA). The software is currently being maintained by the [Uncertainty Quantification Group](https://uqgroup.mit.edu) at MIT.
 
-## Developing team
+## Software development team
 
 Ricardo Baptista (MIT), Paul-Baptiste Rubio (MIT)
 
