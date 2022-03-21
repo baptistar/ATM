@@ -54,7 +54,7 @@ To plot the approximate density, we evaluate `CM.log_pdf` on a grid of points. T
 
 We can also generate 100 samples from the approximate density by inverting the map at samples from the standard Gaussian reference using
 ```
-    Xsamples = G.S.inverse(PB.S.inverse(randn(1000,2)));
+    Xsamples = G.S.inverse(PB.S.inverse(randn(100,2)));
 ```
 
 We can evaluate the approximate conditional density <img src="https://render.githubusercontent.com/render/math?math=\pi(x_2|x_1)"> using the second component of the map. We can evaluate the pullback density of the Gaussian reference through the second component at `x` as `CM.log_pdf(x,2)`. 
