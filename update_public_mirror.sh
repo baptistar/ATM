@@ -29,7 +29,7 @@ echo "Pushing private"
 git push -f
 
 # 2) Exclude list
-declare -a EXCLUDE_LIST=("examples/ATMAlgorithmCriteria" "examples/Approximation_Theory" "examples/HighDimensionalSparseGaussian" "examples/Lorenz63" "examples/NeurIPS" "examples/RectifierPlots" "examples/Spectroscopy" "examples/ToyProblemOneDimensional" "examples/WaveletBasis" "examples/em31" "examples/icesat" "examples/PlotPBR" "testing/test_Grad_PullbackDensity.m")
+declare -a EXCLUDE_LIST=("examples/ATMAlgorithmCriteria" "examples/Approximation_Theory" "examples/HighDimensionalSparseGaussian" "examples/Lorenz63" "examples/NeurIPS" "examples/RectifierPlots" "examples/Spectroscopy" "examples/ToyProblemOneDimensional" "examples/WaveletBasis" "examples/em31" "examples/icesat" "examples/PlotPBR" "testing/test_Grad_PullbackDensity.m" "examples/StochasticVolatility" "todo.md")
 
 # 3) Check existence of ../ATM/
 PUBLIC_PATH="../ATM/"
