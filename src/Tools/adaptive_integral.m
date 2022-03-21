@@ -48,7 +48,7 @@ I_lm1 = I_l;
 err = Inf*ones(size(I_l));
 level = 2;
 
-while(any(any(err > max(rel_tol*abs(I_l), abs_tol))) && level <= max_level)
+while(any(err > max(rel_tol*abs(I_l), abs_tol),'all') && level <= max_level)
 
     % collect points for next level
     if isempty(cache_xi{level}) || isempty(cache_wi{level})

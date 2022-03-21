@@ -3,7 +3,7 @@ function S = separable_map(comps, basis, order)
     % find maximum size
     d = max(comps);
     
-    % repeat basis
+    % repeat basis if necessary
     if length(basis) == 1
         basis = repmat({basis},1,d);
     end

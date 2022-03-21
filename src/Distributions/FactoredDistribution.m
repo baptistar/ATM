@@ -17,14 +17,14 @@ classdef FactoredDistribution
         end %endFunction
 		%------------------------------------------------------------------
 		%------------------------------------------------------------------
-        function d = dim(FD)
+        function d = d(FD)
             d = length(FD.factors);
         end %endFunction
 		%------------------------------------------------------------------
 		%------------------------------------------------------------------
         function logpi = log_pdf(FD, X, comp_idx)
             if (nargin < 3)
-                comp_idx = 1:FD.dim;
+                comp_idx = 1:FD.d;
             end
             logpi = zeros(size(X,1),1);
             for k=comp_idx

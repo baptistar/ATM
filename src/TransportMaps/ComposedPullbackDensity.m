@@ -125,11 +125,11 @@ classdef ComposedPullbackDensity
             end
             % evaluate S at all X and comp_idx components of Jacobian
             
-            Sx = self.S{1}.evaluate(X);
-            dJ = self.S{1}.logdet_Jacobian(X, comp_idx);
+            Sx = self.S{1}.S.evaluate(X);
+            dJ = self.S{1}.S.logdet_Jacobian(X, comp_idx);
             for j=2:length(self.S)
-                dJ = dJ + self.S{j}.logdet_Jacobian(Sx, comp_idx);
-                Sx = self.S{j}.evaluate(Sx);
+                dJ = dJ + self.S{j}.S.logdet_Jacobian(Sx, comp_idx);
+                Sx = self.S{j}.S.evaluate(Sx);
             end
             % extract comp_idx components
             %Sx = Sx(:, comp_idx);

@@ -1,5 +1,5 @@
 clear; close all; clc
-addpath(genpath('../../src'))
+addpath(genpath('../src'))
 
 % define different basis objects
 basis = PhysicistHermiteFunction();
@@ -28,7 +28,7 @@ for i=2:order
 end
 if normt == true
     for i=0:order
-        Psi_t(:,i+1) = Psi_t(:,i+1) / sqrt(sqrt(pi) * 2^i * factorial(i));
+        Psi_t(:,i+1) = Psi_t(:,i+1) / sqrt(2^i * factorial(i));
     end
 end
 
@@ -44,7 +44,7 @@ for i=0:order
     dxPsi_t(:,i+1) = basis_poly.grad_x(x,i,1,false) .* exp(-x.^2/2) - ...
         x .* basis_poly.evaluate(x,i,false) .* exp(-x.^2/2);
     if normt == true
-        dxPsi_t(:,i+1) = dxPsi_t(:,i+1) / sqrt(sqrt(pi) * 2^i * factorial(i));
+        dxPsi_t(:,i+1) = dxPsi_t(:,i+1) / sqrt(2^i * factorial(i));
     end
 end
 
@@ -61,7 +61,7 @@ for i=0:order
                       basis_poly.grad_x(x,i,1,false) .* exp(-x.^2/2) .* (-2*x) + ...
                       basis_poly.evaluate(x,i,false) .* exp(-x.^2/2) .* (x.^2-1);
     if normt == true
-        d2xPsi_t(:,i+1) = d2xPsi_t(:,i+1) / sqrt(sqrt(pi) * 2^i * factorial(i));
+        d2xPsi_t(:,i+1) = d2xPsi_t(:,i+1) / sqrt(2^i * factorial(i));
     end
 end
 
@@ -79,7 +79,7 @@ for i=0:order
                       basis_poly.grad_x(x,i,1,false) .* exp(-x.^2/2) .* (3*x.^2-3) + ...
                       basis_poly.evaluate(x,i,false) .* exp(-x.^2/2) .* (-x.^3+3*x);
     if normt == true
-        d3xPsi_t(:,i+1) = d3xPsi_t(:,i+1) / sqrt(sqrt(pi) * 2^i * factorial(i));
+        d3xPsi_t(:,i+1) = d3xPsi_t(:,i+1) / sqrt(2^i * factorial(i));
     end
 end
 

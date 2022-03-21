@@ -9,8 +9,8 @@ classdef PullbackDensity
     % and reference density by learning the transport map from samples
 
     properties
-        S   % {d x 1} cell of map components
-        ref % global reference density
+        S       % TriangularTransportMap object
+        ref     % global reference density
     end
 
     methods  
@@ -20,13 +20,15 @@ classdef PullbackDensity
             if iscell(S)
                 S = TriangularTransportMap(S);
             elseif ~isa(S, 'TriangularTransportMap')
-		error('Define S as TriangularTransportMap or cell')
-	    end
+                error('Define S as TriangularTransportMap or cell')
+            end
             % assign S and ref
             PB.S = S;
             PB.ref = ref;
             % check dimension of S and ref
-            %if PB.S.d ~= PB.ref.d
+            if PB.S.d ~= PB.ref.d
+                error('S and ref must have the same dimension')
+            end
         end %endFunction
         %------------------------------------------------------------------
         %------------------------------------------------------------------
@@ -36,7 +38,7 @@ classdef PullbackDensity
         %------------------------------------------------------------------
         %------------------------------------------------------------------
         function log_pi = log_pdf(self, X, comp_idx)
-        % evaluate: log pullback of density defined by transport map S(x)
+        % log pullback of density defined by transport map S(x)
         %
         % Inputs:  X - (N x d) sample matrix
         %          comp_idx - (optional) list of k components to evaluate 
@@ -57,11 +59,18 @@ classdef PullbackDensity
 
             % evaluate pullback density log_pi(x)
             log_pi = self.ref.log_pdf(Sx, comp_idx) + log_dxSx;
-
+            
         end %endFunction
         %------------------------------------------------------------------
         %------------------------------------------------------------------
         function dx_log_pi = grad_x_log_pdf(self, X, grad_dim, comp_idx)
+        % gradient of log pullback density defined by transport map S(x)
+        %
+        % Inputs:  X - (N x d) sample matrix
+        %          grad_dim - (optional) list of gradients to compute
+        %          comp_idx - (optional) list of k components to evaluate 
+        % Outputs: dx_log_pi - (N x d) matrix of gradients
+
             % if not specified, evaluate all components of transport map
             if (nargin < 4)
                 comp_idx = 1:self.S.d;
@@ -88,63 +97,51 @@ classdef PullbackDensity
         end %endFunction
         %------------------------------------------------------------------
         %------------------------------------------------------------------
-%         function d2xDJ = hess_x_logdet_Jacobian(self, X, grad_dim, comp_idx)
-%             % if not specified, evaluate all components of transport map
-%             if (nargin < 4)
-%                 comp_idx = 1:self.d;
-%             end
-%             if (nargin < 3)
-%                 grad_dim = 1:self.d;
-%             end
-%             % check dimensions of inputs
-%             if size(X,2) ~= self.d
-%                 error('PB: dimension mismatch for input samples')
-%             end
-% 
-%             % compute and sum derivative for each component in comp_idx
-%             d2xDJ = zeros(size(X,1), length(grad_dim), length(grad_dim));
-%             for Ck = comp_idx
-%                 grad_dim_Ck = intersect(grad_dim, 1:Ck);
-%                 dxSk = self.S{k}.grad_xd( X(:,1:Ck) );
-%                 dxdxSk = self.S{k}.grad_x_grad_xd( X(:,1:Ck), grad_dim_Ck );
-%                 d2xdxSk = self.S{k}.hess_x_grad_xd( X(:,1:Ck), grad_dim_Ck );
-%                 d2xJk = 1./(dxSk).^2 .* OuterProd(dxdxSk, dxdxSk) + ...
-%                         1./(dxSk) .* d2xdxSk;
-%                 d2xDJ(:,grad_dim_Ck, grad_dim_Ck) = ...
-%                     d2xDJ(:,grad_dim_Ck, grad_dim_Ck) + d2xJk;
-%             end
-% 
-%         end %endFunction
-%         %------------------------------------------------------------------
-%         %------------------------------------------------------------------
-%         function d2x_log_pi = hess_x_log_pdf(self, X, grad_dim, comp_idx)
-%             %error('hess_x_log_pdf is not yet implemented!')
-%             % if not specified, evaluate all components of transport map
-%             if (nargin < 4)
-%                 comp_idx = 1:self.d;
-%             end
-%             % if not specified, compute gradients for all variables
-%             if (nargin < 3)
-%                 grad_dim = 1:self.d;
-%             end
-%             % check dimensions of inputs
-%             if size(X,2) ~= self.d
-%                 error('PB: dimension mismatch for input samples')
-%             end
-%             
-%             % evaluate S, \nabla_x S, \nabla^2_x S, extract \partial_xd S
-%             Sx = self.evaluate(X, comp_idx);
-%             dxSx = self.grad_x(X, grad_dim, comp_idx);
-%             d2xSx = self.hess_x(X, grad_dim, comp_idx);
-%             dx_logeta = self.ref.grad_x_log_pdf(Sx, grad_dim, comp_idx);
-%             d2x_logeta = self.ref.hess_x_log_pdf(Sx, grad_dim, comp_idx);
-%             d2xlogdS = self.hess_x_logdet_Jacobian(self, X, grad_dim, comp_idx);
-%             
-%             % evaluate gradient
-%             d2x_log_pi = d2x_logeta .* OuterProd(dxSx, dxSx) + ...
-%                         dx_logeta .* d2xSx + d2xlogdS;
-% 
-%         end
+        function d2x_log_pi = hess_x_log_pdf(self, X, grad_dim, comp_idx)
+        % Hessian of log pullback density defined by transport map S(x)
+        %
+        % Inputs:  X - (N x d) sample matrix
+        %          grad_dim - (optional) list of gradients to compute
+        %          comp_idx - (optional) list of k components to evaluate 
+        % Outputs: d2x_log_pi - (N x d x d) matrix of Hessians
+
+            % if not specified, evaluate all components of transport map
+            if (nargin < 4)
+                comp_idx = 1:self.d;
+            end
+            % if not specified, compute gradients for all variables
+            if (nargin < 3) || isempty(grad_dim)
+                grad_dim = 1:self.d;
+            end
+            % check dimensions of inputs
+            if size(X,2) ~= self.d
+                error('PB: dimension mismatch for input samples')
+            end
+
+            % evaluate S, \nabla_x S, \nabla^2_x S, extract \partial_xd S
+            Sx = self.S.evaluate(X);
+            dxSx = self.S.grad_x(X, grad_dim);
+            d2xSx = self.S.hess_x(X, grad_dim);
+            dx_logeta = self.ref.grad_x_log_pdf(Sx, [], comp_idx);
+            d2x_logeta = self.ref.hess_x_log_pdf(Sx, [], comp_idx);
+            d2xlogdS = self.S.hess_x_logdet_Jacobian(X, grad_dim, comp_idx);
+
+            % evaluate hessian
+            %d2x_logetaS = zeros(size(X,1), self.S.d, self.S.d);
+            %for i=1:size(X,1)
+            %    d2x_logetaS(i,:,:) = squeeze(dxSx(i,:,:)).'*squeeze(d2x_logeta(i,:,:))*squeeze(dxSx(i,:,:));
+            %end
+            % evaluate matrix product \nablaS ^T * \nabla^2\log\eta * \nablaS
+            dxSx_rep1 = repmat(permute(dxSx,[1,3,2]), 1, 1, 1, self.S.d);
+            dxSx_rep2 = reshape(dxSx, size(X,1), 1, self.d, self.S.d);
+            d2x_logeta_rep = reshape(d2x_logeta, size(X,1), 1, self.d, self.S.d);
+            d2x_logetaS1 = squeeze(sum(dxSx_rep1 .* d2x_logeta_rep, 3));
+            d2x_logetaS = squeeze(sum(repmat(d2x_logetaS1, 1, 1, 1,self.S.d).* dxSx_rep2, 3));
+            % sum terms in Hessian
+            d2x_logetaS = d2x_logetaS + squeeze(sum(dx_logeta .* d2xSx,2));
+            d2x_log_pi = d2x_logetaS + d2xlogdS;
+            
+        end
         %------------------------------------------------------------------
         %------------------------------------------------------------------
         function [self, output] = optimize(self, XW, comp_idx)
@@ -167,11 +164,13 @@ classdef PullbackDensity
             end
             
             % optimize components seperately if reference is product measure
-            if isa(self.ref, 'IndependentProductDitribution')
+            if isa(self.ref, 'IndependentProductDistribution')
                 output = cell(self.S.d, 1);
                 for k=comp_idx
-                    XW_k.X=X(:,1:k);
-                    XW_k.W=W;
+                    % create struct with sub-samples
+                    XW_k = struct;
+                    XW_k.X = X(:,1:k);
+                    XW_k.W = W;
                     % extract initial condition if coefficients are set
                     if ~isempty(self.S.S{k}.coeff)
                         a0 = (self.S.S{k}.coeff).';
@@ -187,6 +186,10 @@ classdef PullbackDensity
                     error('Define S using TriangularTransportMap')
                 end
                 a0 = self.S.coeff;
+                % create struct with samples
+                XW = struct;
+                XW.X = X;
+                XW.W = W;
                 self.S = optimize_map(self.S, self.ref, a0, XW);
             end
             
@@ -247,8 +250,6 @@ classdef PullbackDensity
                         XWvalid_k, max_terms(k),  stopping);
                 end
             else
-                %[self.S{1}, output] = greedy_basis_selection( ...
-                %        self.S{1}, self.ref, X, Xvalid, max_terms, stopping);
                 error('Global greedy optimization is not yet implemented')
             end
             

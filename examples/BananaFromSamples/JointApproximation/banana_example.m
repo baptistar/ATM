@@ -2,64 +2,91 @@ clear; clc; close all;
 sd = 1; rng(sd);
 
 % add paths
-addpath(genpath('../src'))
+addpath(genpath('../../../src'))
 
 % define parameters 
-d  = 2;     % dimension of unknown parameters
-M  = 1000;  % number of samples
+d = 2;     % dimension of unknown parameters
+M = 1000;  % number of samples
 
-%% -- RUN TMAP FILTER --
+%% -- STANDARDIZE SAMPLES --
 
 % generate samples
-Xtrain = sample_banana(M);
-%%
+X = sample_banana(M);
+Xtest = sample_banana(M);
+
 % standardize samples with a Gaussian linear diagonal map
 G = GaussianPullbackDensity(d, true);
-G = G.optimize(Xtrain);
-Ztrain = G.evaluate(Xtrain);
+G = G.optimize(X);
+Xnorm = G.S.evaluate(X);
+Xnormtest = G.S.evaluate(Xtest);
+%% -- LEARN TRANSPORT MAP --
 
 % define reference distribution
-ref = IndependentProductDitribution({Normal(), Normal()});
-
-% learn map with total-order basis
-% order = 2;
-% TM = total_order_map(1:d, ProbabilistHermiteFunction(), order);
-% PB = PullbackDensity(TM, ref);
-% PB = PB.optimize(Ztrain);
+ref = IndependentProductDistribution({Normal(), Normal()});
 
 % setup map with greedy basis selection (start from S(x) = Id(x))
-basis = ProbabilistHermiteFunction();
+basis = HermiteProbabilistPolyWithLinearization();
 TM = identity_map(1:d, basis);
 PB = PullbackDensity(TM, ref);
 
 % specify a maximum number of terms (5 for S^1, 40 for S^2)
-[PB, output] = PB.greedy_optimize(Ztrain, [], [5,35], 'max_terms');
+[PB, ~] = PB.greedy_optimize(Xnorm, Xnormtest, [5,5], 'max_terms');
 
-% identify the optimal number of terms in each map component by single training/test split
-% [PB, output] = PB.greedy_optimize(Ztrain, [], 50, 'Split');
-
-% identify the optimal number of terms in each map component by cross-validation
-% [PB, output] = PB.greedy_optimize(Ztrain, [], 50, 'kFold');
-
-% compose non-linear and linear maps
+% compose map with linear transformation for pre-conditioning
 CM = ComposedPullbackDensity({G, PB}, ref);
 
-% sample from composed map
-%Zi = randn(1000,2);
-%Xi_new = CM.inverse(Zi);
-
-%% Plot results
+%% -- PLOT FULL DENSITY --
 
 % check approximation
-xx = linspace(-4,4,50);
-[X, Y] = meshgrid(xx, xx);
+xx = linspace(-3,3,100);
+yy = linspace(-3,5,100);
+[Xg, Yg] = meshgrid(xx, yy);
 
 % evaluate approximate and true density
-approx_pi = exp(CM.log_pdf([X(:), Y(:)]));
-true_pi   = exp(log_pdf_banana([X(:), Y(:)]));
+true_pi   = exp(log_pdf_banana([Xg(:), Yg(:)]));
+approx_pi = exp(CM.log_pdf([Xg(:), Yg(:)]));
 
-approx_pi = reshape(approx_pi, size(X,1), size(X,2));
-true_pi   = reshape(true_pi, size(X,1), size(X,2));
+true_pi   = reshape(true_pi, size(Xg,1), size(Xg,2));
+approx_pi = reshape(approx_pi, size(Xg,1), size(Xg,2));
+
+% plot densities and samples
+figure()
+hold on
+contourf(Xg, Yg, true_pi)
+plot(X(:,1), X(:,2), '.r', 'MarkerSize',8)
+axis([-3,3,-3,5])
+lim = caxis;
+set(gca,'FontSize',18)
+xlabel('$x_1$','FontSize',24)
+ylabel('$x_2$','FontSize',24)
+set(gca,'LineWidth',2)
+title('True PDF')
+hold off
+print('-dpng','true_pdf')
+
+figure()
+contourf(Xg, Yg, approx_pi)
+axis([-3,3,-3,5])
+caxis(lim)
+hold on
+set(gca,'FontSize',18)
+xlabel('$x_1$','FontSize',24)
+ylabel('$x_2$','FontSize',24)
+set(gca,'LineWidth',2)
+title('Approximate PDF')
+print('-dpng','approx_pdf')
+
+%% -- PLOT CONDITIONAL DENSITY --
+
+% check approximation
+yst = 2;
+xx = linspace(-4,4,100);
+
+% evaluate approximate and true density
+true_cond_pi_tilde = exp(log_pdf_banana([xx.', repmat(yst,length(xx),1)]));
+true_cond_pi_norm_const = trapz(xx, true_cond_pi_tilde);
+true_cond_pi = true_cond_pi_tilde/true_cond_pi_norm_const;
+approx_pi = exp(CM.log_pdf([repmat(yst,length(xx),1), xx.'],2));
 
 % plot densities and samples
 figure('position',[0,0,600,300])
@@ -67,18 +94,24 @@ figure('position',[0,0,600,300])
 subplot(1,2,1)
 contourf(X, Y, true_pi)
 hold on
-plot(Xtrain(:,1), Xtrain(:,2), '.r','MarkerSize',6)
+plot(xx, yst*ones(length(xx),1), '-r')
 axis([-4,4,-4,4])
-lim = caxis;
-title('True PDF')
+legend('PDF','$y^*$')
+xlabel('$x$')
+ylabel('$y$')
+title('Joint PDF')
+hold off
 
 subplot(1,2,2)
-contourf(X, Y, approx_pi)
-axis([-4,4,-4,4])
-caxis(lim)
 hold on
-%plot(Xi_new(:,1), Xi_new(:,2), '.r', 'MarkerSize',6)
+plot(xx, true_cond_pi, '-k')
+plot(xx, approx_pi)
+xlim([-4,4])
+legend('Truth','Approximation')
+xlabel('$x$')
+ylabel('$\pi(x|y^*)$')
 title('Approximate PDF')
+hold off
 
 %% -- DEFINE MODEL --
 

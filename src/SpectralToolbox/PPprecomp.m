@@ -1,4 +1,4 @@
-classdef PPprecomp < matlab.mixin.Copyable%handle
+classdef PPprecomp < matlab.mixin.Copyable
     
     % Define struct to store pre-computed values for MultivariatePoly, 
     % ParametericPoly, and IntegratedPositiveFunction classes

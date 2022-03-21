@@ -31,8 +31,9 @@ classdef HermitePhysicistPoly
 		%------------------------------------------------------------------
 		%------------------------------------------------------------------
         function c = normalization_const(~, m)
-            %c = sqrt(gamma(m+1) .* 2.^m * sqrt(pi));
-            c = sqrt(gamma(m+1) .* 2.^m);  %sqrt(pi) is already accounted for by sampling
+            % sqrt(pi) is already accounted for by sampling from N(0,1)
+            % using m! = gamma(m+1)
+            c = sqrt(gamma(m+1) .* 2.^m);  
         end %endFunction
         %------------------------------------------------------------------
 		%------------------------------------------------------------------

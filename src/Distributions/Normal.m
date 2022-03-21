@@ -6,6 +6,7 @@ classdef Normal
 	% Date:    July 2019
 
 	properties
+		d = 1     % dimension is fixed
 		mean   % mean of density
 		sigma  % standard deviation of density
 	end

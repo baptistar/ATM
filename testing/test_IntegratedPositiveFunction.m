@@ -1,8 +1,7 @@
 clear; close all; clc
+addpath(genpath('../src'))
 
-addpath(genpath('../../src'))
-
-% test IntegratedPositiveFunction with 
+% test IntegratedPositiveFunction
 d = 2;
 N = 500;
 
@@ -272,7 +271,7 @@ dx2F0 = zeros(size(X,1),1);
 dx1IF = zeros(size(X,1),1);
 for i=1:size(X,1)
     x2 = linspace(0,X(i,2),1000)';
-    dxPsi2 = basis{2}.grad_vandermonde(x2, max(m_idxs(:,1)), 1, true);
+    dxPsi2 = basis{2}.grad_vandermonde(x2, max(m_idxs(:,2)), 1, true);
     Psi1_i = repmat(Psi1x(i,m_idxs(:,1)+1), length(x2), 1);
     dx1Psi1_i = repmat(dxPsi1x(i,m_idxs(:,1)+1), length(x2), 1);
     dxPsi2_i = dxPsi2(:,m_idxs(:,2)+1);
@@ -320,7 +319,88 @@ assert(norm(dxjdxFp_pre(:) - dxjdxFt(:),2)/numel(dxjdxFt) < tol);
 
 %% hess_x
 
-% Not implemented
+disp('hess_x')
+tic; d2xFp = Ip.hess_x(X, []); toc;
+disp('hess_x with precomp')
+tic; d2xFp_pre = Ip.hess_x(X, [], precomp); toc;
+
+% evaluate derivatives of first and second term
+Psi1x    = basis{1}.grad_vandermonde(X(:,1), max(m_idxs(:,1)), 0, true);
+dxPsi1x  = basis{1}.grad_vandermonde(X(:,1), max(m_idxs(:,1)), 1, true);
+dxPsi2x  = basis{2}.grad_vandermonde(X(:,2), max(m_idxs(:,2)), 1, true);
+d2xPsi1x = basis{1}.grad_vandermonde(X(:,1), max(m_idxs(:,1)), 2, true);
+d2xPsi2x = basis{2}.grad_vandermonde(X(:,2), max(m_idxs(:,2)), 2, true);
+Psi20    = basis{2}.grad_vandermonde(zeros(N,1), max(m_idxs(:,2)), 0, true);
+
+% evaluate \partial_x1^2 f(0)
+d2x1F0  = (d2xPsi1x(:,m_idxs(:,1)+1) .* Psi20(:,m_idxs(:,2)+1) * c');
+
+% define \nabla^2_x f(0)
+d2xF0 = zeros(size(X,1), d, d);
+d2xF0(:,1,1) = d2x1F0;
+
+d2xIF = zeros(size(X,1), d, d);
+% evaluate \partial^2_x1 \int_0^x2 g(\partial_x2 f) dt
+for i=1:size(X,1)
+    x2 = linspace(0,X(i,2),2000)';
+    dxPsi2 = basis{2}.grad_vandermonde(x2, max(m_idxs(:,2)), 1, true);
+    Psi1_i = repmat(Psi1x(i,m_idxs(:,1)+1), length(x2), 1);
+    dx1Psi1_i = repmat(dxPsi1x(i,m_idxs(:,1)+1), length(x2), 1);
+    d2x1Psi1_i = repmat(d2xPsi1x(i,m_idxs(:,1)+1), length(x2), 1);
+    dxPsi2_i = dxPsi2(:,m_idxs(:,2)+1);
+    d2x1gdPx = Ip.rec.grad_x((Psi1_i .* dxPsi2_i) * c') .* ((d2x1Psi1_i .* dxPsi2_i) * c') + ...
+             Ip.rec.hess_x((Psi1_i .* dxPsi2_i) * c') .* ((dx1Psi1_i .* dxPsi2_i) * c').^2;
+    d2xIF(i,1,1) = trapz(x2, d2x1gdPx);
+end
+% evaluate \partial_x1\partial_x2 \int_0^x2 g(\partial_x2 f) dt
+dxf    = (Psi1x(:,m_idxs(:,1)+1) .* dxPsi2x(:,m_idxs(:,2)+1)) * c';
+dx1x2f = (dxPsi1x(:,m_idxs(:,1)+1) .* dxPsi2x(:,m_idxs(:,2)+1)) * c';
+d2xIF(:,1,2) = Ip.rec.grad_x(dxf) .* dx1x2f;
+d2xIF(:,2,1) = d2xIF(:,1,2);
+% evaluate \partial_x2^2 \int_0^x2 g(\partial_x2 f) dt = g(\partial_x2 f)
+d2xf   = (Psi1x(:,m_idxs(:,1)+1) .* d2xPsi2x(:,m_idxs(:,2)+1)) * c';
+d2xIF(:,2,2) = Ip.rec.grad_x(dxf) .* d2xf;
+
+% compute sums
+d2xFt = d2xF0 + d2xIF;
+
+assert(norm(d2xFp(:) - d2xFt(:),2)/numel(d2xFt) < tol);
+assert(norm(d2xFp_pre(:) - d2xFt(:),2)/numel(d2xFt) < tol);
+
+%% Test hess_x_grad_xd
+
+disp('hess_x_grad_xd')
+tic; d2xdxFp = Ip.hess_x_grad_xd(X, []); toc;
+disp('hess_x_grad_xd with precomp')
+tic; d2xdxFp_pre = Ip.hess_x_grad_xd(X, [], precomp); toc;
+
+d2xdxFt = zeros(size(X,1), d, d);
+
+% evaluate derivatives of basis functions
+Psi1x    = basis{1}.grad_vandermonde(X(:,1), max(m_idxs(:,1)), 0, true);
+Psi2x    = basis{2}.grad_vandermonde(X(:,2), max(m_idxs(:,2)), 0, true);
+dxPsi1x  = basis{1}.grad_vandermonde(X(:,1), max(m_idxs(:,1)), 1, true);
+dxPsi2x  = basis{2}.grad_vandermonde(X(:,2), max(m_idxs(:,2)), 1, true);
+d2xPsi1x = basis{1}.grad_vandermonde(X(:,1), max(m_idxs(:,1)), 2, true);
+d2xPsi2x = basis{2}.grad_vandermonde(X(:,2), max(m_idxs(:,2)), 2, true);
+d3xPsi2x = basis{2}.grad_vandermonde(X(:,2), max(m_idxs(:,2)), 3, true);
+
+% evaluate \partial_x1,x2 \Psi, \partial_x2 \Psi, \partial^2_x2 \Psi
+dx12Psi    = dxPsi1x(:,m_idxs(:,1)+1) .* dxPsi2x(:,m_idxs(:,2)+1);
+d2x1dx2Psi = d2xPsi1x(:,m_idxs(:,1)+1) .* dxPsi2x(:,m_idxs(:,2)+1);
+dx1dx2Psi  = dxPsi1x(:,m_idxs(:,1)+1) .* d2xPsi2x(:,m_idxs(:,2)+1);
+dx2Psi     = Psi1x(:,m_idxs(:,1)+1) .* dxPsi2x(:,m_idxs(:,2)+1);
+d2x2Psi    = Psi1x(:,m_idxs(:,1)+1) .* d2xPsi2x(:,m_idxs(:,2)+1);
+d3x2Psi    = Psi1x(:,m_idxs(:,1)+1) .* d3xPsi2x(:,m_idxs(:,2)+1);
+
+% evaluate \partial_x1 \int_0^x2 g(\partial_x2 f) dt
+d2xdxFt(:,1,1) = Ip.rec.hess_x(dx2Psi * c') .* (dx12Psi * c').^2 + Ip.rec.grad_x(dx2Psi * c') .* (d2x1dx2Psi * c');
+d2xdxFt(:,1,2) = Ip.rec.hess_x(dx2Psi * c') .* (dx12Psi * c') .* (d2x2Psi * c') + Ip.rec.grad_x(dx2Psi * c') .* (dx1dx2Psi * c');
+d2xdxFt(:,2,1) = d2xdxFt(:,1,2);
+d2xdxFt(:,2,2) = Ip.rec.hess_x(dx2Psi * c') .* (d2x2Psi * c').^2 + Ip.rec.grad_x(dx2Psi * c') .* (d3x2Psi * c');
+
+assert(norm(d2xdxFp(:) - d2xdxFt(:),2)/numel(d2xdxFt) < tol);
+assert(norm(d2xdxFp_pre(:) - d2xdxFt(:),2)/numel(d2xdxFt) < tol);
 
 %% Test identity function
 
@@ -354,6 +434,6 @@ Xd = Ip.inverse(X(:,1:d-1),Z);
 % evaluate map at Xd
 Zt = Ip.evaluate([X(:,1:d-1),Xd]);
 
-assert(norm(Z(:) - Zt(:))/numel(Z) < tol)
+assert(norm(Z(:) - Zt(:))/norm(Z) < 1e-3)
 
 % -- END OF TESTS --

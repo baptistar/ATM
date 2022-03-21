@@ -170,6 +170,25 @@ classdef IntegratedPositiveFunction
         end %endFunction
         %------------------------------------------------------------------
         %------------------------------------------------------------------
+        function d2xdxdS = hess_x_grad_xd(self, X, grad_dim, precomp)
+            if (nargin < 4)
+                precomp = PPprecomp();
+            end
+            % if grad_dim is not specified/empty, set to all dimensions
+            if (nargin < 3) || isempty(grad_dim)
+                grad_dim = 1:self.dim;
+            end
+            self.check_inputs(X)
+            % evaluate \partial_x_d f & \nabla_x \partial_x_d f
+            dxdf = self.f.grad_xd(X, precomp);
+            dxdxdf = self.f.grad_x_grad_xd(X, grad_dim, precomp);
+            d2xdxdf = self.f.hess_x_grad_xd(X, grad_dim, precomp);
+            % evaluate \nabla_x_j g(\partial_x_d f)
+            d2xdxdS = self.rec.grad_x(dxdf) .* d2xdxdf + ...
+                self.rec.hess_x(dxdf) .* OuterProd(dxdxdf, dxdxdf);
+        end %endFunction
+        %------------------------------------------------------------------
+        %------------------------------------------------------------------
         function dcS = grad_coeff(self, X, coeff_idx, precomp)
             if (nargin < 4)
                 precomp = PPprecomp();
@@ -258,16 +277,33 @@ classdef IntegratedPositiveFunction
             if size(Z,2) ~= 1
                 error('Too many dimensions in output samples')
             end
-            % invert samples by minimizing least-squares objective
+            % define objective
             Zs = Z - self.f.evaluate_f0([Xdm1, zeros(size(Xdm1,1),1)], precomp);
             fun = @(X) self.inverse_fn(X, Xdm1, Zs, precomp);
-            options = optimoptions('fminunc', 'MaxIterations',2000, ...
-                'SpecifyObjectiveGradient',true, 'Display', 'off');
-            X0 = zeros(size(Z,1),1);
-            [X,fX,exit_flag] = fminunc(fun, X0, options);
-            % check result: \| S(x) - Z\|_{2} < tolerance for all x
-            if (fX > 1e-6) || (exit_flag <= 0)
-                warning('Loss %.2e - Didn''t converge: Increase the number of iterations', fX)
+            % determine bounds for inversion
+            a = -ones(size(Z,1),1);
+            b = ones(size(Z,1),1);
+            fa = fun(a);
+            fb = fun(b);
+            while(any(fa .* fb > 0.0))
+                for i=1:size(Z,1)
+                    if fa(i) * fb(i) > 0.0
+                        deltai = 0.5*(b(i) - a(i));
+                        if fa(i) > 0
+                            a(i) = a(i) - deltai;
+                        elseif fb(i) < 0
+                            b(i) = b(i) + deltai;
+                        end
+                    end
+                end
+                fa = fun(a);
+                fb = fun(b);
+            end
+            % call hybrid Newton-bisection solver
+            [X,fXk,~] = hybridRootFindingSolver(fun, a, b);
+            % check error
+            if any(fXk > 1e-6)
+                warning('Inversion did not converge: Max error %f\n', max(fXk));
             end
         end %endFunction
         %------------------------------------------------------------------
@@ -330,8 +366,58 @@ classdef IntegratedPositiveFunction
         end %endFunction
         %------------------------------------------------------------------
         %------------------------------------------------------------------
-        function hess_x_integrate_xd(~, ~, ~)
-            error('hess_x_integrate_xd is not yet implemented')
+        function d2xIntF = hess_x_integrate_xd(self, X, grad_dim, precomp)
+            % get index of self.dim in grad_dim
+            dim_idx = (grad_dim == self.dim);
+            grad_dim_md = grad_dim(~dim_idx);
+            % evaluate off-diagonal basis evaluations and 
+            if ~isempty(precomp.eval_offdiagbasis)
+                Psio = precomp.eval_offdiagbasis;
+            else
+                Psio = self.f.evaluate_offdiagbasis(X);
+            end
+            if ~isempty(precomp.grad_x_offdiagbasis)
+                dxPsio = precomp.grad_x_offdiagbasis;
+            else
+                dxPsio = self.f.grad_x_offdiagbasis(X);
+            end
+            if ~isempty(precomp.hess_x_offdiagbasis)
+                d2xPsio = precomp.hess_x_offdiagbasis;
+            else
+                d2xPsio = self.f.hess_x_offdiagbasis(X);
+            end
+            % define quadrature points
+            quad_pts = @(N) precomp.evaluate_quadrature_Psid(self.f, X, N);
+            % evaluate \int_0^x_d \nabla_x g(\partial_x_d f) dt
+            d2xIntF = zeros(size(X,1), length(grad_dim), length(grad_dim));
+            for i = 1:length(grad_dim_md)
+                for j = 1:length(grad_dim_md)
+                    d_i = grad_dim_md(i);
+                    d_j = grad_dim_md(j);
+                    % define function to be integrated
+                    dxf = @(dxPsid) (Psio .* dxPsid) * self.coeff.';
+                    dxidf = @(dxPsid) (dxPsio(:,:,d_i) .* dxPsid) * self.coeff.';
+                    dxjdf = @(dxPsid) (dxPsio(:,:,d_j) .* dxPsid) * self.coeff.';
+                    dxixjdf = @(dxPsid) (d2xPsio(:,:,d_i,d_j) .* dxPsid) * self.coeff.';
+                    dxixjS = @(dxPsid) self.rec.grad_x( dxf(dxPsid) ) .* dxixjdf(dxPsid) + ...
+                        self.rec.hess_x( dxf(dxPsid) ) .* dxidf(dxPsid) .* dxjdf(dxPsid);
+                    % evaluate \int_0^x_d g(\partial_x_d f) dt
+                    [d2xIntF(:,i,j), precomp.quad_dxPsidi, precomp.quad_xi, precomp.quad_wi] = ...
+                        adaptive_integral(dxixjS, quad_pts, ...
+                        precomp.quad_dxPsidi, precomp.quad_xi, precomp.quad_wi, ...
+                        precomp.tol, precomp.pts_per_level, precomp.max_levels);
+                    d2xIntF(:,j,i) = d2xIntF(:,i,j);
+                end
+            end
+            % add term for  \nabla^2_x \int_0^x_d g(\partial_x_d) f
+            if any(dim_idx)
+                for i = 1:length(grad_dim_md)
+                    d_i = grad_dim_md(i);
+                    d2xIntF(:,dim_idx,i) = self.grad_x_grad_xd(X, d_i, precomp);
+                    d2xIntF(:,i,dim_idx) = d2xIntF(:,dim_idx,i);
+                end
+                d2xIntF(:,dim_idx,dim_idx) = self.hess_xd(X, precomp);
+            end
         end %endFunction
         %------------------------------------------------------------------
         %------------------------------------------------------------------
@@ -375,10 +461,10 @@ classdef IntegratedPositiveFunction
             precomp.quad_dxPsidi = [];
             precomp.quad_wi = [];
             % evaluate integrals
-            S = self.integrate_xd([Xdm1, X], precomp) - Zs; 
-            dxdS = self.grad_xd([Xdm1, X], precomp);
-            f = norm(S)^2;
-            g = (2*S .* dxdS)';
+            f = self.integrate_xd([Xdm1, X], precomp) - Zs; 
+            if nargin > 1
+                g = self.grad_xd([Xdm1, X], precomp);
+            end
         end
         %------------------------------------------------------------------
     end %endMethods

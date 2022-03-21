@@ -1,11 +1,14 @@
 clear; close all; clc
-addpath(genpath('../../'))
+addpath(genpath('../src'))
 sd = 1; rng(sd);
 
 % set parameters
 d_x = 2; d_y = 2;
 d = d_x + d_y;
 comps = d_y + (1:d_x);
+
+% define comp_idx
+comp_idx = 3:4;
 
 % generate data
 N = 1e4;
@@ -39,14 +42,11 @@ LM = GaussianPullbackDensity(d_x+d_y, true);
 LM = LM.optimize(YX_train);
 
 % check L and c
-assert(norm(LM.c - mu_train.') < tol);
-assert(norm(LM.L - Linv_diag) < tol);
-
-% define comp_idx
-comp_idx = 3:4;
+assert(norm(LM.S.c - mu_train.') < tol);
+assert(norm(LM.S.L - Linv_diag) < tol);
 
 % check evaluate
-Sx = LM.evaluate(YX_test, comp_idx);
+Sx = LM.S.evaluate(YX_test, comp_idx);
 Sx_true = (Linv_diag(comp_idx,:) * (YX_test - mu_train).').';
 
 assert(norm(Sx(:) - Sx_true(:)) < tol);
@@ -55,7 +55,7 @@ assert(norm(Sx(:) - Sx_true(:)) < tol);
 ncomp_idx = 1:2;
 Xp = YX_test(:,ncomp_idx);
 Z  = randn(size(Xp,1),2);
-Xd = LM.inverse(Z, Xp, comp_idx);
+Xd = LM.S.inverse(Z, Xp, comp_idx);
 Xd_true = (Ldiag(comp_idx,comp_idx) * Z.').' + mu_train(comp_idx);
 
 assert(norm(Xd(:) - Xd_true(:)) < tol);
@@ -74,7 +74,7 @@ Z = randn(N_samples,d_x);
 y_vect = mean(YX(:,1:d_y));
 
 Y_vect = repmat(y_vect, N_samples, 1);
-post_samples = LM.inverse(Z, Y_vect, comp_idx);
+post_samples = LM.S.inverse(Z, Y_vect, comp_idx);
 post_samples_true = (Ldiag(comp_idx,comp_idx)*Z.').' + mu_train(comp_idx);
 
 assert(norm(post_samples_true - post_samples,'fro') < 1e-10)
@@ -85,11 +85,11 @@ LM = GaussianPullbackDensity(d_x+d_y, false);
 LM = LM.optimize(YX_train);
 
 % check L and c
-assert(norm(LM.c - mu_train.') < tol);
-assert(norm(LM.L - Linv_train) < tol);
+assert(norm(LM.S.c - mu_train.') < tol);
+assert(norm(LM.S.L - Linv_train) < tol);
 
 % check evaluate
-Sx = LM.evaluate(YX_test, comp_idx);
+Sx = LM.S.evaluate(YX_test, comp_idx);
 Sx_true = (Linv_train(comp_idx,:) * (YX_test - mu_train).').';
 
 assert(norm(Sx(:) - Sx_true(:)) < tol);
@@ -98,9 +98,9 @@ assert(norm(Sx(:) - Sx_true(:)) < tol);
 ncomp_idx = 1:2;
 Xp = YX_test(:,ncomp_idx);
 Z  = randn(size(Xp,1),2);
-Xd = LM.inverse(Z, Xp, comp_idx);
+Xd = LM.S.inverse(Z, Xp, comp_idx);
 
-Z_id = LM.evaluate([Xp,Xd], comp_idx); 
+Z_id = LM.S.evaluate([Xp,Xd], comp_idx); 
 
 assert(norm(Z(:) - Z_id(:)) < tol);
 
@@ -122,7 +122,7 @@ Z_cond = Z - (Linv_train(comp_idx,ncomp_idx)*(y_vect(ncomp_idx) - mu_train(ncomp
 post_samples_true = (L_train(comp_idx,comp_idx)*Z_cond.').' + mu_train(comp_idx);
 
 Y_vect = repmat(y_vect, N_samples, 1);
-post_samples = LM.inverse(Z, Y_vect, comp_idx);
+post_samples = LM.S.inverse(Z, Y_vect, comp_idx);
 
 assert(norm(post_samples_true - post_samples,'fro') < 1e-10)
 

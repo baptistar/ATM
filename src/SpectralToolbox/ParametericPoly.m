@@ -120,8 +120,10 @@ classdef ParametericPoly < MultivariatePoly
                 Psid0 = self.evaluate_diagbasis(X0);
             end
             % add evaluations to all rows except for dim_idx
-            d2xPsi = zeros(size(X,1), self.n_coeff, length(grad_dim),length(grad_dim));
-            d2xPsi(:,:,~dim_idx,~dim_idx) = d2xPsio .* Psid0;
+            d2xPsi = zeros(size(X,1), self.n_coeff, length(grad_dim), length(grad_dim));
+            if any(~dim_idx)
+                d2xPsi(:,:,~dim_idx,~dim_idx) = d2xPsio .* Psid0;
+            end
             % compute inner product of basis functions and coefficients
             d2xf0 = InnerProd(d2xPsi, self.coeff, 2);
         end %endFunction
@@ -173,6 +175,57 @@ classdef ParametericPoly < MultivariatePoly
                     d2xPsid = self.hess_xd_diagbasis(X);
                 end
                 dxdxdP(:,dim_idx) = ((Psid .* d2xPsid) * self.coeff.');
+            end
+        end %endFunction
+        %------------------------------------------------------------------
+        %------------------------------------------------------------------
+        function d2xdxdP = hess_x_grad_xd(self, X, grad_dim, precomp)
+            % set grad_dim to all dimensions if it is not specified
+            if ~exist('grad_dim', 'var') || isempty(grad_dim)
+                grad_dim = 1:self.dim;
+            end
+            % declare array to store result
+            d2xdxdP = zeros(size(X,1), length(grad_dim), length(grad_dim));
+            % get index of self.dim in grad_dim
+            dim_idx = (grad_dim == self.dim);
+            % evaluate \nabla_xj \nabla_xd f(x) for j \neq d
+            if any(~dim_idx)
+                if (nargin == 4) && ~isempty(precomp.hess_x_offdiagbasis)
+                    d2xPsio = precomp.hess_x_offdiagbasis;
+                    d2xPsio = d2xPsio(:,:,grad_dim(~dim_idx));
+                else
+                    d2xPsio = self.hess_x_offdiagbasis(X, grad_dim(~dim_idx));
+                end
+                % pre-compute diagonal basis
+                if (nargin == 4) && ~isempty(precomp.grad_xd_diagbasis)
+                    dxPsid = precomp.grad_xd_diagbasis;
+                else
+                    dxPsid = self.grad_xd_diagbasis(X);
+                end
+                d2xdxdP(:,~dim_idx,~dim_idx) = InnerProd(d2xPsio .* dxPsid, self.coeff, 2);
+            end
+            % evaluate \nabla^3_xd f(x)
+            if any(dim_idx)
+                % pre-compute off-diagonal basis
+                if (nargin == 4) && ~isempty(precomp.eval_offdiagbasis)
+                    Psio = precomp.eval_offdiagbasis;
+                else
+                    Psio = self.evaluate_offdiagbasis(X);
+                end
+                if (nargin == 4) && ~isempty(precomp.grad_x_offdiagbasis)
+                    dxPsio = precomp.grad_x_offdiagbasis;
+                    dxPsio = dxPsio(:,:,grad_dim(~dim_idx));
+                else
+                    dxPsio = self.grad_x_offdiagbasis(X, grad_dim(~dim_idx));
+                end
+                % evaluate derivatives of basis of x_{d}
+                if any(~dim_idx)
+                    d2xPsid = self.grad_xk_basis(X, 2, self.dim, self.dim, self.multi_idxs);
+                    d2xdxdP(:,dim_idx,~dim_idx) = InnerProd(dxPsio .* d2xPsid, self.coeff, 2);
+                    d2xdxdP(:,~dim_idx,dim_idx) = d2xdxdP(:,dim_idx,~dim_idx);
+                end
+                d3xPsid = self.grad_xk_basis(X, 3, self.dim, self.dim, self.multi_idxs);
+                d2xdxdP(:,dim_idx,dim_idx)  = ((Psio .* d3xPsid) * self.coeff.');
             end
         end %endFunction
         %------------------------------------------------------------------

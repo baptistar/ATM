@@ -37,8 +37,9 @@ classdef HermiteProbabilistPoly
         %------------------------------------------------------------------
 		%------------------------------------------------------------------
         function c = normalization_const(~, m)
-            %c = sqrt(sqrt(2*pi) * gamma(m+1));
-            c = sqrt(gamma(m+1)); %sqrt(2*pi) is already accounted for by sampling
+            % sqrt(2*pi) is already accounted for by sampling from N(0,1)
+            % using m! = gamma(m+1)
+            c = sqrt(gamma(m+1));
         end %endFunction
 		%------------------------------------------------------------------
 		%------------------------------------------------------------------ 

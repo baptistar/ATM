@@ -25,7 +25,7 @@ for i=2:order
 end
 if normt == true
     for i=0:order
-        Psi_t(:,i+1) = Psi_t(:,i+1) / sqrt(sqrt(2*pi) * factorial(i));
+        Psi_t(:,i+1) = Psi_t(:,i+1) / sqrt(factorial(i));
     end
 end
 
@@ -41,7 +41,7 @@ for i=0:order
     dxPsi_t(:,i+1) = basis_poly.grad_x(x,i,1,false) .* exp(-x.^2/4) - ...
         (x/2) .* basis_poly.evaluate(x,i,false) .* exp(-x.^2/4);
     if normt == true
-        dxPsi_t(:,i+1) = dxPsi_t(:,i+1) / sqrt(sqrt(2*pi) * factorial(i));
+        dxPsi_t(:,i+1) = dxPsi_t(:,i+1) / sqrt(factorial(i));
     end
 end
 
@@ -58,7 +58,7 @@ for i=0:order
                       basis_poly.grad_x(x,i,1,false) .* exp(-x.^2/4) .* (-1*x) + ...
                       basis_poly.evaluate(x,i,false) .* exp(-x.^2/4) .* (x.^2/4-1/2);
     if normt == true
-        d2xPsi_t(:,i+1) = d2xPsi_t(:,i+1) / sqrt(sqrt(2*pi) * factorial(i));
+        d2xPsi_t(:,i+1) = d2xPsi_t(:,i+1) / sqrt(factorial(i));
     end
 end
 
@@ -76,7 +76,7 @@ for i=0:order
                       basis_poly.grad_x(x,i,1,false) .* exp(-x.^2/4) .* (3*x.^2/4-3/2) + ...
                       basis_poly.evaluate(x,i,false) .* exp(-x.^2/4) .* (-x.^3/8+3*x/4);
     if normt == true
-        d3xPsi_t(:,i+1) = d3xPsi_t(:,i+1) / sqrt(sqrt(2*pi) * factorial(i));
+        d3xPsi_t(:,i+1) = d3xPsi_t(:,i+1) / sqrt(factorial(i));
     end
 end
 

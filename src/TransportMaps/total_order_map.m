@@ -25,9 +25,6 @@ function Sk = total_order_component(k, basis, order)
     % define initial m_idx
     m_idx = TotalOrderMultiIndices(order*ones(1,k));
     
-    % remove zero m_idx
-    %m_idx = m_idx(2:end,:);
-    
     % define polynomial and integrated function
     P = ParametericPoly(basis, m_idx);
     Sk = IntegratedPositiveFunction(P);

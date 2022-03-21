@@ -1,7 +1,7 @@
 % testing adaptive_integral function
 
 clear; close all; clc
-addpath(genpath('../../src'))
+addpath(genpath('../src'))
 
 % define integration tol 
 tol = 1e-6;
@@ -29,7 +29,6 @@ int_pts = @(N) int_pts_simple(N, a, b);
 [I1, ~] = adaptive_integral(f, int_pts);
 assert(norm(I1(:) - I_true(:)) < tol)
 
-%%
 % check if cache is empty
 [I2, cache_xi_e, ~, ~] = adaptive_integral(f, int_pts, [], [], []);
 assert(norm(I2(:) - I_true(:)) < tol)
@@ -126,13 +125,6 @@ function [xi,wi,zi] = int_pts_simple(N, a, b)
     % set zi = xi for simple function
     zi = xi;
     
-end
-
-function [fi,wi,xi] = int_pts_sotftplus_poly_xd(precomp, P, X, N)
-
-    % use precomp function to evaluate quadrature points
-     [fi,wi,xi] = precomp.evaluate_quadrature_Psi(P, X, N);
-     
 end
 
 % -- END OF FILE --

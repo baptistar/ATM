@@ -1,5 +1,5 @@
 clear; close all; clc
-addpath(genpath('../../src'))
+addpath(genpath('../src'))
 
 % define different basis objects
 basis = HermitePhysicistPoly();
@@ -24,7 +24,7 @@ for i=2:order
 end
 if normt == true
     for i=0:order
-        Psi_t(:,i+1) = Psi_t(:,i+1) / sqrt(sqrt(pi) * 2^i * factorial(i));
+        Psi_t(:,i+1) = Psi_t(:,i+1) / sqrt(2^i * factorial(i));
     end
 end
 
@@ -39,7 +39,7 @@ dxPsi_t = zeros(length(x), order+1);
 for i=1:order
     dxPsi_t(:,i+1) = 2*i*basis.evaluate(x, i-1, false);
     if normt == true
-        dxPsi_t(:,i+1) = dxPsi_t(:,i+1) / sqrt(sqrt(pi) * 2^i * factorial(i));
+        dxPsi_t(:,i+1) = dxPsi_t(:,i+1) / sqrt(2^i * factorial(i));
     end
 end
 
@@ -54,7 +54,7 @@ d2xPsi_t = zeros(length(x), order+1);
 for i=2:order
     d2xPsi_t(:,i+1) = 4*i*(i-1)*basis.evaluate(x, i-2, false);
     if normt == true
-        d2xPsi_t(:,i+1) = d2xPsi_t(:,i+1) / sqrt(sqrt(pi) * 2^i * factorial(i));
+        d2xPsi_t(:,i+1) = d2xPsi_t(:,i+1) / sqrt(2^i * factorial(i));
     end
 end
 

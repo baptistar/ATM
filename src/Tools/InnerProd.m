@@ -5,12 +5,12 @@ function dxS = InnerProd(A,B,dim)
 % Inputs: A, B - arbitary matrices
 %         dim - index along which to compute inner product
 
-% check dimensions
-if size(A, dim) ~= size(B, dim)
-    error('Size of A and b dont''t match along specified dimension')
-end
+    % check dimensions
+    if size(A, dim) ~= size(B, dim)
+        error('Size of A and b dont''t match along specified dimension')
+    end
 
-% compute inner product
-dxS = squeeze(sum( A .* B, dim));
+    % compute inner product
+    dxS = squeeze(sum( A .* B, dim));
 
 end

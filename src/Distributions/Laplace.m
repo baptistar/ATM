@@ -6,6 +6,7 @@ classdef Laplace
 	% Date:    July 2019
 
 	properties
+		d = 1     % dimension is fixed
 		location  % location (i.e., mean) parameter of density
 		scale     % scale parameter of density
 	end

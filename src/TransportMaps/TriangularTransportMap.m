@@ -107,8 +107,9 @@ classdef TriangularTransportMap
             X = zeros(size(Z,1), self.d);
             X(:,1:size(Xp,2)) = Xp;
             % invert each map component independently
-            for Ck = comp_idx
-                X(:,Ck) = self.S{Ck}.inverse( X(:,1:Ck-1), Z(:,Ck), precomp{Ck});
+            for k=1:length(comp_idx)
+                Ck = comp_idx(k);
+                X(:,Ck) = self.S{Ck}.inverse( X(:,1:Ck-1), Z(:,k), precomp{Ck});
             end
             % extract components in comp_idx
             X = X(:, comp_idx);
@@ -158,7 +159,7 @@ classdef TriangularTransportMap
             
             self.check_inputs(X)
             % compute gradients for all components in comp_idx
-            dxS = zeros(size(X,1), self.d, self.d);
+            dxdS = zeros(size(X,1), self.d, self.d);
             for Ck = comp_idx
                 dxdS(:,Ck) = self.S{Ck}.grad_xd( X(:,1:Ck), precomp{Ck} );
             end
@@ -198,42 +199,74 @@ classdef TriangularTransportMap
             for Ck = comp_idx
                 grad_dim_Ck = intersect(1:Ck, grad_dim);
                 dxSk = self.S{Ck}.grad_xd( X(:,1:Ck), precomp{Ck} );
-                dxdxSk = self.S{Ck}.grad_x_grad_xd( X(:,1:Ck), grad_dim_Ck, precomp{Ck} );
-                dxDJ(:,grad_dim_Ck) = dxDJ(:,grad_dim_Ck) + 1./dxSk .* dxdxSk;
+                if ~isempty(grad_dim_Ck)
+                    dxdxSk = self.S{Ck}.grad_x_grad_xd( X(:,1:Ck), grad_dim_Ck, precomp{Ck} );
+                    dxDJ(:,grad_dim_Ck) = dxDJ(:,grad_dim_Ck) + 1./dxSk .* dxdxSk;
+                end
             end
             % extract gradients in grad_dim
             dxDJ = dxDJ(:, grad_dim);
         end %endFunction
         %------------------------------------------------------------------
         %------------------------------------------------------------------
-        %         function d2xDJ = hess_x_logdet_Jacobian(self, X, grad_dim, comp_idx, precomp)
-        %         % evaluate Hessian of log-determinant of map Jacobian.
-        %         % Output: dxDJ - (N x d) matrix
-        %             if (nargin < 4)
-        %                 comp_idx = 1:self.d;
-        %             end
-        %             if (nargin < 3)
-        %                 grad_dim = 1:self.d;
-        %             end
-        %             % check dimensions of inputs
-        %             if size(X,2) ~= self.d
-        %                 error('PB: dimension mismatch for input samples')
-        %             end
-        %
-        %             % compute and sum derivative for each component in comp_idx
-        %             d2xDJ = zeros(size(X,1), length(grad_dim), length(grad_dim));
-        %             for Ck = comp_idx
-        %                 grad_dim_Ck = intersect(grad_dim, 1:Ck);
-        %                 dxSk = self.S{k}.grad_xd( X(:,1:Ck) );
-        %                 dxdxSk = self.S{k}.grad_x_grad_xd( X(:,1:Ck), grad_dim_Ck );
-        %                 d2xdxSk = self.S{k}.hess_x_grad_xd( X(:,1:Ck), grad_dim_Ck );
-        %                 d2xJk = 1./(dxSk).^2 .* OuterProd(dxdxSk, dxdxSk) + ...
-        %                         1./(dxSk) .* d2xdxSk;
-        %                 d2xDJ(:,grad_dim_Ck, grad_dim_Ck) = ...
-        %                     d2xDJ(:,grad_dim_Ck, grad_dim_Ck) + d2xJk;
-        %             end
-        %
-        %         end %endFunction
+        function d2xS = hess_x(self, X, grad_dim, comp_idx, precomp)
+            % evaluate the hessian of each component with respect to inputs x
+            % Output is (N x d x d x d) matrix. The (i,j,k,l) entry is the derivative
+            % of component j with respect to inputs k,l for sample i.
+            if (nargin < 5)
+                precomp = self.initialize_precomp();
+            end
+            if (nargin < 4) || isempty(comp_idx)
+                comp_idx = 1:self.d;
+            end
+            if (nargin < 3) || isempty(grad_dim)
+                grad_dim = 1:self.d;
+            end
+            self.check_inputs(X)
+            % compute Hessians for all components in comp_idx
+            d2xS = zeros(size(X,1), self.d, self.d, self.d);
+            for Ck = comp_idx
+                grad_dim_Ck = intersect(1:Ck, grad_dim);
+                if ~isempty(grad_dim_Ck)
+                    d2xS(:, Ck, grad_dim_Ck, grad_dim_Ck) = ...
+                        self.S{Ck}.hess_x( X(:,1:Ck), grad_dim_Ck, precomp{Ck});
+                end
+            end
+            % extract components in comp_idx and gradients in grad_dim
+            d2xS = d2xS(:, comp_idx, grad_dim, grad_dim);
+        end
+        %------------------------------------------------------------------
+        %------------------------------------------------------------------
+        function d2xDJ = hess_x_logdet_Jacobian(self, X, grad_dim, comp_idx, precomp)
+            % evaluate Hessian of log-determinant of map Jacobian.
+            % Output: d2xDJ - (N x d x d) matrix
+            if (nargin < 5)
+                precomp = self.initialize_precomp();
+            end
+            if (nargin < 4) || isempty(comp_idx)
+                comp_idx = 1:self.d;
+            end
+            if (nargin < 3)  || isempty(grad_dim)
+                grad_dim = 1:self.d;
+            end
+            self.check_inputs(X)
+            % evaluate Hessians for each component in comp_idx
+            d2xDJ = zeros(size(X,1), length(grad_dim), length(grad_dim));
+            for Ck = comp_idx
+                grad_dim_Ck = intersect(grad_dim, 1:Ck);
+                dxSk = self.S{Ck}.grad_xd( X(:,1:Ck), precomp{Ck} );
+                if ~isempty(grad_dim_Ck)
+                    dxdxSk = self.S{Ck}.grad_x_grad_xd( X(:,1:Ck), grad_dim_Ck, precomp{Ck});
+                    d2xdxSk = self.S{Ck}.hess_x_grad_xd( X(:,1:Ck), grad_dim_Ck, precomp{Ck});
+                    d2xJk = -1./(dxSk).^2 .* OuterProd(dxdxSk, dxdxSk) + ...
+                            1./(dxSk) .* d2xdxSk;
+                    d2xDJ(:,grad_dim_Ck, grad_dim_Ck) = ...
+                        d2xDJ(:,grad_dim_Ck, grad_dim_Ck) + d2xJk;
+                end
+            end
+            % extract gradients in grad_dim
+            d2xDJ = d2xDJ(:, grad_dim, grad_dim);
+        end %endFunction
         %------------------------------------------------------------------
         %------------------------------------------------------------------
         function dadS = grad_coeff(self, X, precomp)
@@ -278,7 +311,7 @@ classdef TriangularTransportMap
                 precomp = self.initialize_precomp();
             end
             self.check_inputs(X)
-            daDJ = zeros(N, self.n_coeff);
+            daDJ = zeros(size(X,1), self.n_coeff);
             c = 1;
             for k = 1 : self.d
                 nc = self.S{k}.n_coeff;

@@ -1,15 +1,8 @@
 classdef HermiteProbabilistPolyWithLinearization
 
-	% HermiteProbabilistPoly defines probabilist Hermite polynomials
-	% using the rescaling of physicist Hermite polynomials
-	%
-	% Un-normalized:
-	%  He_0(x) = 1
-	%  He_1(x) = x
-	%  He_2(x) = x^2 - 1
-	%
-	% Normalized:
-	%  \tilde{He}_n(x) = He_n(x)/\sqrt(\sqrt(2*pi)*n!)
+	% HermiteProbabilistPolyWithLinearization defines probabilist 
+    % Hermite polynomials that are linearized outside of an connected
+    % interval defined by bounds.
 	%
 	% Methods include: evaluate, grad_x, grad_vandermonde
 	% 
@@ -24,7 +17,7 @@ classdef HermiteProbabilistPolyWithLinearization
 	end
 
 	methods
-		function HPL = HermiteProbabilistPolyWithLinearization(varargin)
+		function HPL = HermiteProbabilistPolyWithLinearization(bounds, varargin)
 
 			% Define HP object
 			p = ImprovedInputParser;
@@ -33,9 +26,22 @@ classdef HermiteProbabilistPolyWithLinearization
 
 			% Set Physicist polynomial property
 			HPL.HP = HermiteProbabilistPoly();
-            HPL.bounds = [-3,3].';
+            % set and check bounds
+            if (nargin < 1)
+                bounds = [-3,3].';
+            end
+            HPL.bounds = bounds;
 
 		end %endFunction
+		%------------------------------------------------------------------
+		%------------------------------------------------------------------ 
+        function HPL = set.bounds(HPL, bounds)
+            if length(bounds) ~= 2 || bounds(1) >= bounds(2)
+                error('Bounds do not define connected interval') 
+            else
+                HPL.bounds = bounds;
+            end
+        end %endFunction
 		%------------------------------------------------------------------
 		%------------------------------------------------------------------ 
 		function p = evaluate(HPL, x, m, norm)
@@ -47,15 +53,20 @@ classdef HermiteProbabilistPolyWithLinearization
 		% 		   m - order of Hermite functions
 		% 		   norm - True/False bool for normalization
 		% Outputs: p - (N x 1) poly evaluations
+            % determine inner and outer domain
             inner_pts = (x >= HPL.bounds(1) & x <= HPL.bounds(2));
             outer_pts_left  = x < HPL.bounds(1);
             outer_pts_right = x > HPL.bounds(2);
+            % evaluate polynomials on inner domain
             p = zeros(length(x),1);
             p(inner_pts) = HPL.HP.evaluate(x(inner_pts), m, norm);
-            bd_values = HPL.HP.evaluate(HPL.bounds, m, norm);
-            bd_derivatives = HPL.HP.grad_x(HPL.bounds, m, 1, norm);
-            p(outer_pts_left) = bd_derivatives(1)*(x(outer_pts_left) - HPL.bounds(1)) + bd_values(1);
-            p(outer_pts_right) = bd_derivatives(2)*(x(outer_pts_right) - HPL.bounds(2)) + bd_values(2);
+            % evaluate linear functions on outer domain
+            bd_value_left       = HPL.HP.evaluate(HPL.bounds(1), m, norm);
+            bd_value_right      = HPL.HP.evaluate(HPL.bounds(2), m, norm);
+            bd_derivative_left  = HPL.HP.grad_x(HPL.bounds(1), m, 1, norm);
+            bd_derivative_right = HPL.HP.grad_x(HPL.bounds(2), m, 1, norm);
+            p(outer_pts_left) = bd_derivative_left*(x(outer_pts_left) - HPL.bounds(1)) + bd_value_left;
+            p(outer_pts_right) = bd_derivative_right*(x(outer_pts_right) - HPL.bounds(2)) + bd_value_right;
 		end %endFunction
 		%------------------------------------------------------------------
 		%------------------------------------------------------------------ 
@@ -72,16 +83,20 @@ classdef HermiteProbabilistPolyWithLinearization
             if k == 0
                 dp = HPL.evaluate(x, m, norm);
             else
+                % determine inner and outer domain
                 inner_pts = (x >= HPL.bounds(1) & x <= HPL.bounds(2));
                 outer_pts_left  = x < HPL.bounds(1);
                 outer_pts_right = x > HPL.bounds(2);
+                % evaluate polynomials on inner domain
                 dp = zeros(length(x),1);
                 dp(inner_pts) = HPL.HP.grad_x(x(inner_pts), m, k, norm);
-                % the derivatives of the linear part are non-zero for k=1
+                % evaluate linear functions on outer domain
+                % the derivatives of the linear part are zero for k>1
                 if k == 1
-                    bd_derivatives = HPL.HP.grad_x(HPL.bounds, m, 1, norm);
-                    dp(outer_pts_left) = bd_derivatives(1);
-                    dp(outer_pts_right) = bd_derivatives(2);
+                    bd_derivative_left  = HPL.HP.grad_x(HPL.bounds(1), m, 1, norm);
+                    bd_derivative_right = HPL.HP.grad_x(HPL.bounds(2), m, 1, norm);
+                    dp(outer_pts_left)  = bd_derivative_left;
+                    dp(outer_pts_right) = bd_derivative_right;
                 end
             end
 		end %endFunction

@@ -1,6 +1,7 @@
 classdef MultivariatePoly
 
-    % MultivariatePoly defines a multivariate expansion
+    % MultivariatePoly defines a multivariate linear expansion
+    % in terms of basis functions \Psi_{\alpha}
     %   P(x) = \sum_{\alpha} c_{\alpha}*\Psi_{\alpha}(x)
     %
     % Methods: evaluate, grad_x, hess_x, 

@@ -6,6 +6,7 @@ classdef Uniform
 	% Date:    July 2019
 
 	properties
+		d = 1     % dimension is fixed
         a         % left boundary
         b         % right boundary
         inf       % value for negative inf

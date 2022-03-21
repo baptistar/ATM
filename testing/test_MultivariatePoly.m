@@ -1,5 +1,5 @@
 clear; close all; clc
-addpath(genpath('../../src'))
+addpath(genpath('../src'))
 
 % set tolerance
 tol = 1e-10;

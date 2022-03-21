@@ -6,7 +6,7 @@ function C = OuterProd(A, B)
 %          B - (N x d) matrix
 % Outputs: C - (N x d x d) matrix
 
-	% find dimensions of A and B
+    % find dimensions of A and B
     Asz = size(A);
     Bsz = size(B);
 
@@ -15,10 +15,10 @@ function C = OuterProd(A, B)
         error('Dimension mismath for number of samples in A and B')
     end
 
-	% compute outer product using elementwise multiplication
-	%A_rep = repmat(A,1,1,Bsz(2));
-	%B_rep = repmat(reshape(B,Bsz(1),1,Bsz(2)),1,Asz(2),1);
-	%C = A_rep.*B_rep;
+    % compute outer product using elementwise multiplication
+    %A_rep = repmat(A,1,1,Bsz(2));
+    %B_rep = repmat(reshape(B,Bsz(1),1,Bsz(2)),1,Asz(2),1);
+    %C = A_rep.*B_rep;
     C = bsxfun(@times, A, permute(B, [1 3 2]));
 
 end %endFunction
