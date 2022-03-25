@@ -1,5 +1,5 @@
 clear; close all; clc
-addpath(genpath('../../src'))
+addpath(genpath('../../../src'))
 sd = 1; rng(sd);
 
 %% Plot joint density
@@ -79,7 +79,7 @@ for i=1:length(yst_vect)
     legend(yst_str{i},'FontSize',20,'location','northeast')
     hold off
     %print('-depsc',['presentation_figures/joint_y' num2str(i)])
-    close all
+    %close all
 
     % evaluate true density
     post_tilde = @(x) prior_x(x) .* likelihood(yst,x);
@@ -89,7 +89,7 @@ for i=1:length(yst_vect)
     
     % sample Gaussian and non-Gaussian approximate density
     Sxx = CM.evaluate([yst*ones(N,1), xx'],2);
-    Sxx_linear = TM_linear.evaluate([yst*ones(10000,1), xx'],2);
+    Sxx_linear = TM_linear.S.evaluate([yst*ones(10000,1), xx'],2);
 
     Npost = 10000;
     Xpost = interp1(Sxx,xx,randn(Npost,1));
@@ -109,7 +109,7 @@ for i=1:length(yst_vect)
     legend({'Nonlinear map samples','Linear map samples',['Posterior at ' yst_str{i}]},'FontSize',20)
     hold off
     %print('-depsc',['presentation_figures/post_y' num2str(i)])
-    close all
+    %close all
 
 end
 
