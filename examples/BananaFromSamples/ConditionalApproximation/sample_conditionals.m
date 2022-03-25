@@ -33,7 +33,7 @@ Y = y_sample(X);
 YX = [Y,X];
 
 % set max_terms
-max_terms = 100;
+max_terms = 20;
 
 % find the Gaussian approximation
 G = GaussianPullbackDensity(d, true);
@@ -46,7 +46,10 @@ ref = IndependentProductDistribution(repmat({Normal()},1,d));
 S = identity_map(1:d, basis);
 PB = PullbackDensity(S, ref);
 PB = PB.greedy_optimize(Z/2, [], max_terms, 'Split');
-G.L = G.L/2;
+G.S.S{1}.L = G.S.S{1}.L/2;
+G.S.S{2}.L = G.S.S{2}.L/2;
+G.S.S{1}.c = G.S.S{1}.c/2;
+G.S.S{2}.c = G.S.S{2}.c/2;
 
 % compose maps
 CM = ComposedPullbackDensity({G, PB}, ref);

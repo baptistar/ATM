@@ -4,9 +4,11 @@ sd = 2; rng(sd);
 
 %% Generate data
 
+% define sampling function
 x_sample = @(N) 0.5*randn(N,1);
 y_sample = @(x) x.^2 + 0.1*randn(size(x,1),1);
 
+% define prior and likelihood
 prior_x = @(x) normpdf(x,0,0.5);
 likelihood = @(y,x) normpdf(y - x.^2,0,0.1);
 
@@ -18,14 +20,14 @@ Y = y_sample(X);
 %% Build maps
 
 % set max_terms
-max_terms = 30;
+max_terms = 20;
 
 % compose samples
 YX = [Y,X];
 
 % find the Gaussian approximation
 G = GaussianPullbackDensity(d, true);
-G = G.S.optimize(YX);
+G = G.optimize(YX);
 Z = G.S.evaluate(YX);
 
 % define map 
