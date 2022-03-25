@@ -58,3 +58,5 @@ We can also generate 100 samples from the approximate density by inverting the m
 ```
 
 We can evaluate the approximate conditional density <img src="https://render.githubusercontent.com/render/math?math=\pi(x_2|x_1)"> using the second component of the map. We can evaluate the pullback density of the Gaussian reference through the second component at `x` as `CM.log_pdf(x,2)`. 
+
+A related script that performs cross-validation to determine the basis functions in the map is provided in `examples/BananaFromSamples/JointApproximation/banana_cross_validation.m`.
