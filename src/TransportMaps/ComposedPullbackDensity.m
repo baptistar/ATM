@@ -17,11 +17,19 @@ classdef ComposedPullbackDensity
     
     methods
         function CM = ComposedPullbackDensity(S, ref)
-            
+            % check number of components in each map is equal
+            for i=2:length(S)
+                assert(S{1}.d == S{i}.d)
+            end
+            % extract maps if S is defined using PB
+            for i=1:length(S)
+                if isa(S{i},'PullbackDensity')
+                    S{i} = S{i}.S;
+                end
+            end
             % assign maps and ref to CM
             CM.S = S;
             CM.ref = ref;
-            
         end %endFunction
         %------------------------------------------------------------------
         %------------------------------------------------------------------
@@ -46,12 +54,10 @@ classdef ComposedPullbackDensity
             % evaluate first d-1 maps at all inputs
             Sx = X;
             for j=1:(self.ncomp-1)
-                Sx = self.S{j}.S.evaluate(Sx);
+                Sx = self.S{j}.evaluate(Sx);
             end
             % evaluate comp_idx components of last map
-            Sx = self.S{self.ncomp}.S.evaluate(Sx, comp_idx);
-            % extract comp_idx components
-            %Sx = Sx(:, comp_idx);
+            Sx = self.S{self.ncomp}.evaluate(Sx, comp_idx);
         end %endFunction
         %------------------------------------------------------------------
         %------------------------------------------------------------------                                                                                                                                                                           
@@ -124,12 +130,11 @@ classdef ComposedPullbackDensity
                 comp_idx = 1:self.S{1}.d;
             end
             % evaluate S at all X and comp_idx components of Jacobian
-            
-            Sx = self.S{1}.S.evaluate(X);
-            dJ = self.S{1}.S.logdet_Jacobian(X, comp_idx);
-            for j=2:length(self.S)
-                dJ = dJ + self.S{j}.S.logdet_Jacobian(Sx, comp_idx);
-                Sx = self.S{j}.S.evaluate(Sx);
+            Sx = X;
+            dJ = zeros(size(X,1),1);
+            for j=1:(self.ncomp)
+                dJ = dJ + self.S{j}.logdet_Jacobian(Sx, comp_idx);
+                Sx = self.S{j}.evaluate(Sx);
             end
             % extract comp_idx components
             %Sx = Sx(:, comp_idx);
@@ -142,7 +147,6 @@ classdef ComposedPullbackDensity
                 comp_idx = 1:self.S{1}.d;
             end
             % compute log-determinant and evaluate map
-            
             [dJ, Sx] = self.logdet_Jacobian(X, comp_idx);
             % evaluate log_pi
             log_pi = self.ref.log_pdf(Sx, comp_idx) + dJ;
@@ -165,8 +169,8 @@ classdef ComposedPullbackDensity
             end
             grad_log_pi=PB.grad_x_log_pdf(X,grad_dim,comp_idx);
         end
-        
-        
+        %------------------------------------------------------------------
+        %------------------------------------------------------------------        
         function [self, Sx] = optimize(self, XW, comp_idx)
             if isa(XW,'struct')
                 X=XW.X;

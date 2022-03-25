@@ -14,8 +14,6 @@ function [S, output] = adaptive_transport_map(S, ref, Xtrain, Xvalid, ...
     assert(isa(S, 'TriangularTransportMap'))
     assert(size(Xtrain,2) == S.d)
     
-    
-    
     % set default alpha
     if (nargin < 7) || isempty(alpha)
         alpha = 0;
@@ -181,8 +179,8 @@ function [L, dcL] = negative_log_likelihood(S, ref, X, precomp)
     delta = 1e-9;
 
     % evaluate objective
-    Sx = S.evaluate(X, precomp) + delta*X;
-    dxdS = S.grad_xd(X, precomp) + delta;
+    Sx = S.evaluate(X, [], precomp) + delta*X;
+    dxdS = S.grad_xd(X, [], precomp) + delta;
     % evaluate log_pi(x)
     L = ref.log_pdf(Sx) + sum(log(dxdS),2);
     L = -1 * mean(L,1);

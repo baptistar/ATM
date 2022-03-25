@@ -2,7 +2,7 @@ clear; clc; close all;
 sd = 1; rng(sd);
 
 % add paths
-addpath(genpath('../src'))
+addpath(genpath('../../../src'))
 
 % define parameters 
 d  = 2;     % dimension of unknown parameters
@@ -16,14 +16,15 @@ Xtrain = sample_banana(M);
 % standardize samples with a Gaussian linear diagonal map
 G = GaussianPullbackDensity(d, true);
 G = G.optimize(Xtrain);
-Ztrain = G.evaluate(Xtrain);
+Ztrain = G.S.evaluate(Xtrain);
 
 % define reference distribution
-ref = IndependentProductDitribution({Normal(), Normal()});
+ref = IndependentProductDistribution({Normal(), Normal()});
 
 % learn map with total-order basis
 order = 2;
-TM = total_order_map(1:d, ProbabilistHermiteFunction(), order);
+basis = HermiteProbabilistPolyWithLinearization();
+TM = total_order_map(1:d, basis, order);
 PB = PullbackDensity(TM, ref);
 PB = PB.optimize(Ztrain);
 
@@ -33,33 +34,43 @@ CM = ComposedPullbackDensity({G, PB}, ref);
 %% Plot results
 
 % check approximation
-xx = linspace(-4,4,50);
-[X, Y] = meshgrid(xx, xx);
+xdom = [-3,3];
+ydom = [-3,5];
+xx = linspace(xdom(1),xdom(2),100);
+yy = linspace(ydom(1),ydom(2),100);
+[Xg, Yg] = meshgrid(xx, yy);
 
 % evaluate approximate and true density
-approx_pi = exp(CM.log_pdf([X(:), Y(:)]));
-true_pi   = exp(log_pdf_banana([X(:), Y(:)]));
+approx_pi = exp(CM.log_pdf([Xg(:), Yg(:)]));
+true_pi   = exp(log_pdf_banana([Xg(:), Yg(:)]));
 
-approx_pi = reshape(approx_pi, size(X,1), size(X,2));
-true_pi   = reshape(true_pi, size(X,1), size(X,2));
+approx_pi = reshape(approx_pi, size(Xg,1), size(Xg,2));
+true_pi   = reshape(true_pi, size(Xg,1), size(Xg,2));
+
+% generate samples
+Zref = randn(1000,d);
+Xnew = CM.inverse(Zref);
 
 % plot densities and samples
 figure('position',[0,0,600,300])
 
 subplot(1,2,1)
-contourf(X, Y, true_pi)
+contourf(Xg, Yg, true_pi)
 hold on
 plot(Xtrain(:,1), Xtrain(:,2), '.r','MarkerSize',6)
-axis([-4,4,-4,4])
+xlim(xdom)
+ylim(ydom)
 lim = caxis;
 title('True PDF')
 
 subplot(1,2,2)
-contourf(X, Y, approx_pi)
-axis([-4,4,-4,4])
-caxis(lim)
+contourf(Xg, Yg, approx_pi)
 hold on
-%plot(Xi_new(:,1), Xi_new(:,2), '.r', 'MarkerSize',6)
+plot(Xnew(:,1), Xnew(:,2), '.r', 'MarkerSize',6) 
+xlim(xdom)
+ylim(ydom)
+caxis(lim)
+hold off
 title('Approximate PDF')
 
 %% -- DEFINE MODEL --

@@ -14,7 +14,6 @@ x_sample = @(N) sigma_x*randn(N,1);
 % define observables
 Q1_sample = @(x) -1*x + sigma_q*randn(size(x,1),1);
 Q2_sample = @(x) x.^2 + sigma_q*randn(size(x,1),1);
-%sign(yx(:,1)).*sqrt(abs(yx(:,1))) + sigma_q*randn(size(yx,1),1);
 
 % sample X, Q1,Q2
 N_train  = 10000;
@@ -65,8 +64,6 @@ zlabel('$\pi_{X|Q_1}$','FontSize',24)
 xlim(xdom)
 ylim(ydom)
 hold off
-print('-depsc','figures/condtionals_x_q1')
-close all
     
 %% Generate plots for Q2
    
@@ -99,8 +96,6 @@ zlabel('$\pi_{X|Q_2}$','FontSize',24)
 xlim(xdom)
 ylim(ydom)
 hold off
-print('-depsc','figures/condtionals_x_q2')
-close all
 
 %% Estimate EIG
 
@@ -122,7 +117,7 @@ log_post = log_post(log_post > log_post_quantiles(1) & log_post < log_post_quant
 % evaluate EIG for Q2
 EIG_Q1_mean = mean(log_post - log_prior);
 EIG_Q1_stde = 1.96*std(log_post - log_prior)/sqrt(size(X_test,1));
-fprintf('EIG(X, Q1): %f \\pm %f \n', EIG_Q1_mean, EIG_Q1_stde);
+fprintf('EIG(X, Q1): %.3f \\pm %.3f \n', EIG_Q1_mean, EIG_Q1_stde);
 
 % evaluate log posterior for Q2 at test samples
 comps = 2;
@@ -133,7 +128,7 @@ log_post = log_post(log_post > log_post_quantiles(1) & log_post < log_post_quant
 % evaluate EIG
 EIG_Q2_mean = mean(log_post - log_prior);
 EIG_Q2_stde = 1.96*std(log_post - log_prior)/sqrt(size(X_test,1));
-fprintf('EIG(X, Q2): %f \\pm %f \n', EIG_Q2_mean, EIG_Q2_stde);
+fprintf('EIG(X, Q2): %.3f \\pm %.3f \n', EIG_Q2_mean, EIG_Q2_stde);
 
 %% --- Helper functions ---
 
@@ -147,12 +142,12 @@ function [CM, output] = build_conditional_map(Y, X, max_iter)
     comps = (size(Y,2)+1):d;
 
     % define reference
-    ref = IndependentProductDitribution(repmat({Normal()},1,d));
+    ref = IndependentProductDistribution(repmat({Normal()},1,d));
         
     % define and evaluate Gaussian map
     G = GaussianPullbackDensity(d, true);
     G = G.optimize(YX);
-    Z = G.evaluate(YX);
+    Z = G.S.evaluate(YX);
     
     % define TM
     TM = identity_map(1:d, ProbabilistHermiteFunction());

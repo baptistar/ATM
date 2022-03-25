@@ -1,7 +1,7 @@
 % testing adaptive_integral function
-
 clear; close all; clc
 addpath(genpath('../src'))
+sd = 1; rng(sd);
 
 % define integration tol 
 tol = 1e-6;

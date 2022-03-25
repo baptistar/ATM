@@ -38,11 +38,11 @@ max_terms = 100;
 % find the Gaussian approximation
 G = GaussianPullbackDensity(d, true);
 G = G.optimize(YX);
-Z = G.evaluate(YX);
+Z = G.S.evaluate(YX);
 
 % find the non-Gaussian approximation (rescale variance to improve fit)
 basis = ProbabilistHermiteFunction();
-ref = IndependentProductDitribution(repmat({Normal()},1,d));
+ref = IndependentProductDistribution(repmat({Normal()},1,d));
 S = identity_map(1:d, basis);
 PB = PullbackDensity(S, ref);
 PB = PB.greedy_optimize(Z/2, [], max_terms, 'Split');
@@ -75,7 +75,7 @@ for i=1:length(yst_vect)
     ylim(dom_y)
     legend(yst_str{i},'FontSize',20,'location','northeast')
     hold off
-    print('-depsc',['presentation_figures/joint_y' num2str(i)])
+    %print('-depsc',['presentation_figures/joint_y' num2str(i)])
     close all
 
     % evaluate true density
@@ -105,7 +105,7 @@ for i=1:length(yst_vect)
     xlabel('$x$','FontSize',24)
     legend({'Nonlinear map samples','Linear map samples',['Posterior at ' yst_str{i}]},'FontSize',20)
     hold off
-    print('-depsc',['presentation_figures/post_y' num2str(i)])
+    %print('-depsc',['presentation_figures/post_y' num2str(i)])
     close all
 
 end

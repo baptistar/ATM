@@ -1,6 +1,7 @@
 classdef Banana
 
     properties
+        d = 2
         X1 = Normal(0,0.5)
         X2_noise = Normal(0,0.1)
     end

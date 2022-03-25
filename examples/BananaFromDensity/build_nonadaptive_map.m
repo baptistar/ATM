@@ -25,7 +25,7 @@ PB = PB.optimize(Z);
 %% Plot joint approximation
 
 % sample from push-forward density
-Zeval = randn(1e4,2);
+Zeval = randn(1e3,2);
 X_approx = PB.S.evaluate(Zeval);
 
 % define grid
@@ -65,7 +65,7 @@ PB = PB.optimize(Z);
 %% Plot joint approximation
 
 % sample from push-forward density
-Zeval = randn(1e4,2);
+Zeval = randn(1e3,2);
 X_approx = PB.S.evaluate(Zeval);
 
 % define grid

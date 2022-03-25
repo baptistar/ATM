@@ -19,6 +19,7 @@ G = GaussianPullbackDensity(d, true);
 G = G.optimize(X);
 Xnorm = G.S.evaluate(X);
 Xnormtest = G.S.evaluate(Xtest);
+
 %% -- LEARN TRANSPORT MAP --
 
 % define reference distribution
@@ -38,8 +39,10 @@ CM = ComposedPullbackDensity({G, PB}, ref);
 %% -- PLOT FULL DENSITY --
 
 % check approximation
-xx = linspace(-3,3,100);
-yy = linspace(-3,5,100);
+xdom = [-3,3];
+ydom = [-3,5];
+xx = linspace(xdom(1),xdom(2),100);
+yy = linspace(ydom(1),ydom(2),100);
 [Xg, Yg] = meshgrid(xx, yy);
 
 % evaluate approximate and true density
@@ -54,7 +57,8 @@ figure()
 hold on
 contourf(Xg, Yg, true_pi)
 plot(X(:,1), X(:,2), '.r', 'MarkerSize',8)
-axis([-3,3,-3,5])
+xlim(xdom)
+ylim(ydom)
 lim = caxis;
 set(gca,'FontSize',18)
 xlabel('$x_1$','FontSize',24)
@@ -66,7 +70,8 @@ print('-dpng','true_pdf')
 
 figure()
 contourf(Xg, Yg, approx_pi)
-axis([-3,3,-3,5])
+xlim(xdom)
+ylim(ydom)
 caxis(lim)
 hold on
 set(gca,'FontSize',18)
@@ -79,24 +84,25 @@ print('-dpng','approx_pdf')
 %% -- PLOT CONDITIONAL DENSITY --
 
 % check approximation
-yst = 2;
-xx = linspace(-4,4,100);
+xst = 1;
+yy = linspace(ydom(1), ydom(2), 100);
 
 % evaluate approximate and true density
-true_cond_pi_tilde = exp(log_pdf_banana([xx.', repmat(yst,length(xx),1)]));
-true_cond_pi_norm_const = trapz(xx, true_cond_pi_tilde);
+true_cond_pi_tilde = exp(log_pdf_banana([xst*ones(length(yy),1), yy.']));
+true_cond_pi_norm_const = trapz(yy, true_cond_pi_tilde);
 true_cond_pi = true_cond_pi_tilde/true_cond_pi_norm_const;
-approx_pi = exp(CM.log_pdf([repmat(yst,length(xx),1), xx.'],2));
+approx_pi = exp(CM.log_pdf([xst*ones(length(yy),1), yy.'],2));
 
 % plot densities and samples
 figure('position',[0,0,600,300])
 
 subplot(1,2,1)
-contourf(X, Y, true_pi)
+contourf(Xg, Yg, true_pi)
 hold on
-plot(xx, yst*ones(length(xx),1), '-r')
-axis([-4,4,-4,4])
-legend('PDF','$y^*$')
+plot(xst*ones(length(xx),1), yy, '-r')
+xlim(xdom)
+ylim(ydom)
+legend('PDF','$y^*$','location','northwest')
 xlabel('$x$')
 ylabel('$y$')
 title('Joint PDF')
@@ -106,8 +112,8 @@ subplot(1,2,2)
 hold on
 plot(xx, true_cond_pi, '-k')
 plot(xx, approx_pi)
-xlim([-4,4])
-legend('Truth','Approximation')
+xlim(xdom)
+legend('Truth','Approximation','location','south')
 xlabel('$x$')
 ylabel('$\pi(x|y^*)$')
 title('Approximate PDF')

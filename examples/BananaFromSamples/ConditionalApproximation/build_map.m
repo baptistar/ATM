@@ -25,8 +25,8 @@ YX = [Y,X];
 
 % find the Gaussian approximation
 G = GaussianPullbackDensity(d, true);
-G = G.optimize(YX);
-Z = G.evaluate(YX);
+G = G.S.optimize(YX);
+Z = G.S.evaluate(YX);
 
 % define map 
 basis = ProbabilistHermiteFunction();
@@ -118,8 +118,8 @@ for i=1:length(yst_vect)
         legend({'True posterior','Approximation'},'Location','north','FontSize',24)
     end
     hold off
-    print('-depsc',['figures/post_y' num2str(i)])
-    close all
+    %print('-depsc',['figures/post_y' num2str(i)])
+    %close all
 
     figure
     hold on
@@ -134,8 +134,8 @@ for i=1:length(yst_vect)
         legend({'True KR map','Approximation'},'Location','north','FontSize',24)
     end
     hold off
-    print('-depsc',['figures/map_y' num2str(i)])
-    close all
+    %print('-depsc',['figures/map_y' num2str(i)])
+    %close all
 
 end
 
