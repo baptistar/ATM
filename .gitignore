@@ -4,6 +4,11 @@
 # mat files
 *.mat
 
+# data files
+*.csv
+*.xslx
+*.txt
+
 # figrues
 #*.pdf
 #*.png

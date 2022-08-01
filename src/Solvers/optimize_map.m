@@ -54,10 +54,8 @@ function [L, dcL] = objective(S, ref, a, XW, precomp, alpha)
     Sx = S.evaluate(X, [], precomp) + delta*X;
     dxdS = S.grad_xd(X, [], precomp) + delta;
 
-   
     % evaluate log_pi(x)
     L = ref.log_pdf(Sx) + sum(log(dxdS),2);
-    
    
     %L=max(L,min(L(~isinf(L))));
     L = -1 * sum(W.*L,1);
